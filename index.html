@@ -1,62 +1,128 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-<title>Máy chấm Prompt</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
 <meta charset="utf-8">
+<title>Chipi – Máy chấm Prompt</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-  :root{--blue:#034EA2;--org:#F37021;--lb:#E8EFF8;--lo:#FEF1E8;--gr:#F2F3F5;--ok:#16A34A;--bad:#DC2626}
-  *{box-sizing:border-box}
-  body{margin:0;font-family:"Segoe UI",Roboto,Arial,sans-serif;background:#fafbfc;color:#111;font-size:15px}
-  header{background:linear-gradient(90deg,#16A34A,#034EA2);color:#fff;padding:14px 18px}
-  header h1{margin:0;font-size:20px} header p{margin:4px 0 0;font-size:13px;opacity:.9}
-  main{max-width:760px;margin:0 auto;padding:16px}
-  label{display:block;font-weight:700;color:var(--blue);margin:14px 0 4px}
-  label small{font-weight:400;color:#555}
-  input,textarea{width:100%;padding:10px;border:1px solid #cfd6e0;border-radius:8px;font:inherit;background:#fff}
-  textarea{min-height:64px;resize:vertical}
-  #prompt{min-height:96px}
-  button{margin-top:16px;width:100%;padding:13px;border:0;border-radius:8px;background:var(--org);color:#fff;font-size:16px;font-weight:700;cursor:pointer}
-  button:disabled{opacity:.6;cursor:wait}
-  .card{background:#fff;border-radius:10px;padding:14px;margin-top:16px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
-  .score{font-size:30px;font-weight:800;color:var(--blue)}
-  .src{font-size:12px;color:#666}
-  table{width:100%;border-collapse:collapse;margin-top:8px;font-size:14px}
-  th{background:var(--blue);color:#fff;text-align:left;padding:7px}
-  td{padding:7px;border-bottom:1px solid #eee;vertical-align:top}
-  .p{color:var(--ok);font-weight:700}.f{color:var(--bad);font-weight:700}
-  h3{margin:14px 0 6px;font-size:15px;color:var(--org)}
-  ol,ul{margin:4px 0;padding-left:20px}
-  .warn{background:var(--lo);border-left:4px solid var(--org);padding:10px;border-radius:6px;margin-top:12px;font-size:14px}
-  .hint{background:var(--gr);padding:10px;border-radius:6px;font-size:13px;margin-top:10px}
+:root{--bg1:#0b1026;--bg2:#1b1450;--card:rgba(255,255,255,.07);--line:rgba(255,255,255,.14);
+--txt:#eef2ff;--mut:#a5b0d6;--cy:#22d3ee;--vi:#a78bfa;--org:#F37021;--ok:#34d399;--bad:#fb7185;--yl:#fbbf24}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;font-family:"Segoe UI",Roboto,Arial,sans-serif;color:var(--txt);font-size:15px;
+background:radial-gradient(1200px 600px at 10% -10%,#2b2a8a55,transparent),radial-gradient(900px 500px at 110% 10%,#0e749055,transparent),linear-gradient(160deg,var(--bg1),var(--bg2))}
+main{max-width:780px;margin:0 auto;padding:18px 16px 40px}
+.hero{display:flex;align-items:center;gap:14px}
+.hero h1{margin:0;font-size:24px;background:linear-gradient(90deg,var(--cy),var(--vi));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{margin:4px 0 0;color:var(--mut);font-size:13.5px}
+.bubble{position:relative;background:#fff;color:#1e1b4b;border-radius:14px;padding:10px 14px;font-size:14px;line-height:1.45;box-shadow:0 6px 20px #0006}
+.bubble:before{content:"";position:absolute;left:-8px;top:22px;border:8px solid transparent;border-right-color:#fff;border-left:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-top:16px;backdrop-filter:blur(8px)}
+label{display:block;font-weight:700;margin:12px 0 6px;color:var(--cy)}
+label small{font-weight:400;color:var(--mut)}
+input,textarea{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;color:var(--txt);background:rgba(10,14,40,.55);outline:none;transition:.2s}
+input:focus,textarea:focus{border-color:var(--cy);box-shadow:0 0 0 3px #22d3ee33}
+textarea{min-height:62px;resize:vertical} #prompt{min-height:100px}
+::placeholder{color:#7c86b0}
+button{margin-top:16px;width:100%;padding:14px;border:0;border-radius:12px;font-size:16px;font-weight:800;color:#fff;cursor:pointer;
+background:linear-gradient(90deg,var(--org),#ff3d81);box-shadow:0 8px 24px #f3702155;transition:transform .15s}
+button:hover{transform:translateY(-1px)} button:disabled{opacity:.6;cursor:wait;transform:none}
+/* robot */
+.bot{width:96px;height:96px;flex:none}
+.bot .float{animation:float 3s ease-in-out infinite;transform-origin:center}
+.bot .eye{animation:blink 4s infinite;transform-origin:center;transform-box:fill-box}
+.bot .ant{animation:glow 1.6s ease-in-out infinite}
+.thinking .eye{animation:scan .9s ease-in-out infinite alternate}
+.thinking .ant{animation:glow .4s ease-in-out infinite}
+@keyframes float{50%{transform:translateY(-5px)}}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+@keyframes scan{from{transform:translateX(-4px)}to{transform:translateX(4px)}}
+@keyframes glow{50%{opacity:.35}}
+.dots:after{content:"";animation:dots 1.2s steps(4) infinite}
+@keyframes dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
+/* result */
+.resHead{display:flex;gap:14px;align-items:center}
+.ring{--p:0;width:96px;height:96px;border-radius:50%;flex:none;display:grid;place-items:center;
+background:conic-gradient(var(--c,var(--cy)) calc(var(--p)*1%),#ffffff1a 0)}
+.ring div{width:76px;height:76px;border-radius:50%;background:#12163a;display:grid;place-items:center;font-weight:900;font-size:24px}
+.ring small{display:block;font-size:11px;font-weight:600;color:var(--mut);margin-top:-6px}
+.crit{display:grid;gap:10px;margin-top:14px}
+.ci{border:1px solid var(--line);border-left:4px solid var(--bad);border-radius:12px;padding:10px 12px;background:rgba(10,14,40,.45)}
+.ci.ok{border-left-color:var(--ok)}
+.ci h4{margin:0 0 4px;font-size:14.5px;display:flex;gap:8px;align-items:center}
+.ci .tag{font-size:11px;padding:2px 8px;border-radius:99px;background:#fb718533;color:#fecdd3}
+.ci.ok .tag{background:#34d39933;color:#bbf7d0}
+.ci .part{margin-left:auto;font-size:11px;color:var(--mut);font-weight:400}
+.ci p{margin:0;color:#dbe1ff;line-height:1.5;font-size:14px}
+h3{margin:18px 0 8px;font-size:15px;color:var(--yl)}
+ol,ul{margin:0;padding-left:20px;line-height:1.55}
+.note{margin-top:14px;padding:12px 14px;border-radius:12px;font-size:13.5px;line-height:1.5;background:#fbbf2418;border:1px solid #fbbf2455;color:#fde68a}
+.note b{color:#fff}
+.think{margin-top:12px;padding:10px 12px;border-radius:12px;background:#a78bfa1f;border:1px dashed #a78bfa88;font-size:13.5px}
+.warn{margin-top:14px;padding:12px;border-radius:12px;background:#fb718522;border:1px solid #fb718566}
+@media (max-width:560px){.resHead{flex-wrap:wrap;justify-content:space-between}.resHead .bubble{order:3;flex:1 1 100% !important}.resHead .bubble:before{display:none}}
+footer{margin-top:20px;text-align:center;color:var(--mut);font-size:12px}
 </style>
 </head>
 <body>
-<header>
-  <h1>Máy chấm Prompt</h1>
-  <p>Tư duy phản biện khi sử dụng AI · Không nhập thông tin cá nhân nhạy cảm</p>
-</header>
 <main>
-  <label>Tên / biệt danh <small>(để giảng viên gọi tên)</small></label>
-  <input id="name" maxlength="80" placeholder="VD: Minh – nhóm 3">
+  <div class="hero">
+    <svg class="bot" id="botTop" viewBox="0 0 120 120"><use href="#chipi"/></svg>
+    <div>
+      <h1>Chipi · Máy chấm Prompt</h1>
+      <p>Tư duy phản biện khi sử dụng AI</p>
+    </div>
+  </div>
+  <div class="card" style="display:flex;gap:12px;align-items:flex-start">
+    <div class="bubble" id="greet" style="margin-left:8px">Xin chào! Mình là <b>Chipi</b> 🤖. Bạn viết 3 dòng mô tả vấn đề và 1 prompt, mình chấm theo 7 tiêu chí của lớp nhé. Nhớ đừng nhập thông tin cá nhân nhạy cảm!</div>
+  </div>
 
-  <label>1. HIỆN TRẠNG <small>–  Viết bối cảnh cụ thể, Viết sự thật, không viết cảm xúc</small></label>
-  <textarea id="current" placeholder="VD: Sinh viên năm 3, học Java cơ bản 1 kỳ, chưa làm project nào."></textarea>
+  <div class="card">
+    <label>Tên / biệt danh <small>(để giảng viên gọi tên)</small></label>
+    <input id="name" maxlength="80" placeholder="VD: Minh – nhóm 3">
 
-  <label>2. MONG MUỐN <small>– Mục tiêu của bạn, bạn muốn gì?</small></label>
-  <textarea id="goal" placeholder="VD: Có suất thực tập Java backend trước tháng 6."></textarea>
+    <label>1. HIỆN TRẠNG <small>– mình đang ở đâu? Viết sự thật, không viết cảm xúc</small></label>
+    <textarea id="current" placeholder="VD: Sinh viên năm 3, học Java cơ bản 1 kỳ, chưa làm project nào."></textarea>
 
-  <label>3. RÀNG BUỘC <small>– Mốc thời gian bao lâu, nguồn lực gì, như thế nào là đạt được?</small></label>
-  <textarea id="constraint" placeholder="VD: Còn 3 tháng, mỗi tuần rảnh 10 giờ."></textarea>
+    <label>2. MONG MUỐN <small>– muốn đến đâu, khi nào?</small></label>
+    <textarea id="goal" placeholder="VD: Có suất thực tập Java backend trước tháng 6."></textarea>
 
-  <label>4. PROMPT <small>– câu bạn sẽ gửi cho AI (Mục đích + Bối cảnh + Yêu cầu đầu ra)</small></label>
-  <textarea id="prompt" placeholder="VD: Lên kế hoạch 3 tháng để mình xin thực tập Java backend. Bối cảnh: ... Trả về bảng theo tuần, có mục tiêu và sản phẩm."></textarea>
+    <label>3. RÀNG BUỘC <small>– còn bao lâu, nguồn lực gì?</small></label>
+    <textarea id="constraint" placeholder="VD: Còn 3 tháng, mỗi tuần rảnh 10 giờ."></textarea>
 
-  <button id="btn" onclick="submitForm()">Chấm bài</button>
+    <label>4. PROMPT <small>– câu bạn sẽ gửi cho AI (Mục đích + Bối cảnh + Yêu cầu đầu ra)</small></label>
+    <textarea id="prompt" placeholder="VD: Lên kế hoạch 3 tháng để mình xin thực tập Java backend. Bối cảnh: ... Trả về bảng theo tuần, có mục tiêu và sản phẩm."></textarea>
+
+    <button id="btn" onclick="submitForm()">✨ Nhờ Chipi chấm bài</button>
+  </div>
+
   <div id="out"></div>
+  <footer>FPT Software Academy · Chipi cũng là AI, nên cũng có thể sai 😉</footer>
 </main>
 
+<svg width="0" height="0" style="position:absolute">
+ <defs>
+  <linearGradient id="gHead" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f5f7ff"/><stop offset="1" stop-color="#c7d2fe"/></linearGradient>
+  <linearGradient id="gVis" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e1b4b"/><stop offset="1" stop-color="#312e81"/></linearGradient>
+  <symbol id="chipi" viewBox="0 0 120 120">
+   <g class="float">
+    <line x1="60" y1="14" x2="60" y2="26" stroke="#a5b4fc" stroke-width="3" stroke-linecap="round"/>
+    <circle class="ant" cx="60" cy="11" r="5" fill="#22d3ee"/>
+    <rect x="8" y="46" width="10" height="22" rx="5" fill="#a5b4fc"/>
+    <rect x="102" y="46" width="10" height="22" rx="5" fill="#a5b4fc"/>
+    <rect x="16" y="24" width="88" height="66" rx="30" fill="url(#gHead)"/>
+    <rect x="26" y="36" width="68" height="42" rx="20" fill="url(#gVis)"/>
+    <g class="face"></g>
+    <ellipse cx="34" cy="70" rx="6" ry="3.5" fill="#fb7185" opacity=".55"/>
+    <ellipse cx="86" cy="70" rx="6" ry="3.5" fill="#fb7185" opacity=".55"/>
+    <rect x="40" y="92" width="40" height="18" rx="9" fill="url(#gHead)"/>
+    <circle cx="60" cy="101" r="4" fill="#F37021"/>
+   </g>
+  </symbol>
+ </defs>
+</svg>
+
 <script>
+
 const NAMES = ['Hiện trạng là sự thật','Mong muốn cụ thể','Có ràng buộc','Có mục đích','Có bối cảnh','Có yêu cầu đầu ra','Trung lập'];
 const val = id => document.getElementById(id).value.trim();
 const esc = s => String(s||'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -69,16 +135,31 @@ const LEAD = /(đúng không|phải không|nhỉ\s*\??|chắc là|ai cũng|là �
 const OUTFMT = /(bảng|danh sách|liệt kê|\d+\s*(bước|ý|gạch đầu dòng)|theo tuần|theo ngày|dạng|format|định dạng|so sánh)/i;
 
 function ruleCheck(d){
+  const q = (t,re)=>{const m=t.match(re);return m?'"'+m[0]+'"':''};
   const c = [
-    {pass: d.current.length>15 && NUM.test(d.current), reason: NUM.test(d.current)?'Có thông tin cụ thể.':'Chưa có con số/sự thật kiểm tra được (năm học, điểm, kỹ năng...).'},
-    {pass: d.goal.length>10 && TIME.test(d.goal), reason: TIME.test(d.goal)?'Có mốc thời gian/thước đo.':'Chưa có mốc thời gian hoặc thước đo.'},
-    {pass: NUM.test(d.constraint), reason: NUM.test(d.constraint)?'Có giới hạn cụ thể.':'Ràng buộc chưa có con số (bao nhiêu giờ, bao nhiêu tiền, còn bao lâu?).'},
-    {pass: d.prompt.length>20, reason: d.prompt.length>20?'Prompt có nội dung.':'Prompt quá ngắn để thấy mục đích.'},
-    {pass: d.prompt.length>60 && NUM.test(d.prompt), reason: 'Kiểm tra thô: prompt có đưa chi tiết từ problem statement vào không.'},
-    {pass: OUTFMT.test(d.prompt), reason: OUTFMT.test(d.prompt)?'Có nói dạng đầu ra.':'Chưa nói muốn nhận về dạng gì (bảng, danh sách, theo tuần...).'},
-    {pass: !LEAD.test(d.prompt), reason: LEAD.test(d.prompt)?'Có cụm cài sẵn đáp án: "'+d.prompt.match(LEAD)[0]+'".':'Không thấy cụm cài sẵn đáp án.'}
+    NUM.test(d.current) && d.current.length>15
+      ? {pass:true, reason:'Hiện trạng có thông tin cụ thể, kiểm tra được (có số liệu/mốc). AI biết bạn đang đứng ở đâu để không phải đoán trình độ của bạn.'}
+      : {pass:false, reason:'Hiện trạng chưa có thông tin kiểm tra được như năm học, điểm số, kỹ năng đã có. Thiếu phần này, AI phải đoán trình độ của bạn nên sẽ trả lời chung chung. Gợi ý: "Sinh viên năm 2, TOEIC 350, chưa từng thuyết trình bằng tiếng Anh".'},
+    TIME.test(d.goal) && d.goal.length>10
+      ? {pass:true, reason:'Mong muốn có đích rõ và có mốc thời gian/thước đo ('+q(d.goal,TIME)+'). AI biết bạn cần đến đâu và khi nào.'}
+      : {pass:false, reason:'Mong muốn chưa có mốc thời gian hoặc thước đo, nên AI không biết thế nào là "đạt". Gợi ý: thêm con số và hạn chót, ví dụ "đạt TOEIC 550 trước tháng 6".'},
+    NUM.test(d.constraint)
+      ? {pass:true, reason:'Ràng buộc có giới hạn cụ thể bằng con số. AI có thể chia kế hoạch vừa với thời gian/nguồn lực của bạn.'}
+      : {pass:false, reason:'Ràng buộc chưa có con số. "Ít thời gian" với mỗi người một khác, nên AI phải đoán. Gợi ý: "mỗi ngày rảnh 30 phút, cuối tuần 2 giờ, không có tiền học trung tâm".'},
+    d.prompt.length>20
+      ? {pass:true, reason:'Prompt có nội dung để thấy được bạn hỏi để làm gì.'}
+      : {pass:false, reason:'Prompt quá ngắn nên chưa thấy rõ mục đích. Gợi ý: mở đầu bằng "Lên kế hoạch…/So sánh…/Chấm…" để AI biết nhiệm vụ.'},
+    d.prompt.length>60 && NUM.test(d.prompt)
+      ? {pass:true, reason:'Prompt có đưa chi tiết (con số) từ problem statement vào, nên AI có bối cảnh để trả lời riêng cho bạn.'}
+      : {pass:false, reason:'Prompt chưa mang theo bối cảnh từ 3 dòng phía trên. AI chỉ đọc prompt, không đọc phần bạn viết ở trên. Gợi ý: chép hiện trạng, mong muốn, ràng buộc vào prompt.'},
+    OUTFMT.test(d.prompt)
+      ? {pass:true, reason:'Prompt nói rõ dạng kết quả muốn nhận ('+q(d.prompt,OUTFMT)+'), giúp câu trả lời dùng được ngay.'}
+      : {pass:false, reason:'Prompt chưa nói muốn nhận về dạng gì, nên AI sẽ tự chọn và thường trả về một đoạn văn dài. Gợi ý: "Trả về bảng theo tuần, mỗi tuần có mục tiêu và việc cần làm".'},
+    !LEAD.test(d.prompt)
+      ? {pass:true, reason:'Không thấy cụm từ cài sẵn đáp án. AI không bị dẫn dắt theo ý bạn muốn nghe.'}
+      : {pass:false, reason:'Prompt có cụm '+q(d.prompt,LEAD)+', tức là đã cài sẵn đáp án bạn muốn nghe. AI dễ chiều theo thay vì trả lời khách quan. Gợi ý: đổi thành câu hỏi mở, ví dụ "So sánh các cách học và ưu nhược điểm của từng cách".'}
   ];
-  if (EMO.test(d.current)) c[0].reason += ' Lưu ý: có từ cảm xúc ("'+d.current.match(EMO)[0]+'").';
+  if (EMO.test(d.current)) c[0].reason += ' Lưu ý: có từ cảm xúc '+q(d.current,EMO)+'. Cảm xúc không giúp AI hiểu trình độ của bạn.';
   return c.map((x,i)=>({id:i+1,name:NAMES[i],pass:x.pass,reason:x.reason}));
 }
 
@@ -98,37 +179,82 @@ async function callApi(payload){
   return j.result;
 }
 
+
+/* ---------- Robot Chipi ---------- */
+const FACES = {
+  idle:  '<g class="eye"><ellipse cx="46" cy="55" rx="6" ry="8" fill="#67e8f9"/><ellipse cx="74" cy="55" rx="6" ry="8" fill="#67e8f9"/></g><path d="M52 67 Q60 73 68 67" stroke="#67e8f9" stroke-width="3" fill="none" stroke-linecap="round"/>',
+  think: '<g class="eye"><rect x="38" y="52" width="14" height="5" rx="2.5" fill="#67e8f9"/><rect x="68" y="52" width="14" height="5" rx="2.5" fill="#67e8f9"/></g><circle cx="60" cy="69" r="3" fill="#67e8f9"/>',
+  star:  '<g class="eye"><path d="M46 46l3 6 6 1-4.5 4 1 6-5.5-3-5.5 3 1-6-4.5-4 6-1z" fill="#fde047"/><path d="M74 46l3 6 6 1-4.5 4 1 6-5.5-3-5.5 3 1-6-4.5-4 6-1z" fill="#fde047"/></g><path d="M48 66 Q60 78 72 66" stroke="#fde047" stroke-width="3.5" fill="none" stroke-linecap="round"/>',
+  happy: '<g class="eye"><path d="M39 57 Q46 48 53 57" stroke="#67e8f9" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M67 57 Q74 48 81 57" stroke="#67e8f9" stroke-width="4" fill="none" stroke-linecap="round"/></g><path d="M50 66 Q60 75 70 66" stroke="#67e8f9" stroke-width="3" fill="none" stroke-linecap="round"/>',
+  cheer: '<g class="eye"><ellipse cx="46" cy="55" rx="6" ry="7" fill="#c4b5fd"/><ellipse cx="74" cy="55" rx="6" ry="7" fill="#c4b5fd"/><circle cx="48" cy="52" r="2" fill="#fff"/><circle cx="76" cy="52" r="2" fill="#fff"/></g><path d="M53 70 Q60 66 67 70" stroke="#c4b5fd" stroke-width="3" fill="none" stroke-linecap="round"/>'
+};
+function botSVG(mood, cls){
+  return '<svg class="bot '+(cls||'')+'" viewBox="0 0 120 120"><use href="#chipi"/><g transform="translate(0,0)">'+
+         '<g class="float">'+FACES[mood]+'</g></g></svg>';
+}
+// mặt mặc định cho robot ở đầu trang
+document.getElementById('botTop').outerHTML = botSVG('idle');
+
+const MSG = {
+  star:  s => 'Wow, '+s+'/7! 🎉 Prompt này rõ ràng đến mức AI gần như không phải đoán gì cả. Xem lại các dòng phía dưới để giữ phong độ nhé!',
+  happy: s => s+'/7, khá ổn rồi đó! 👍 Còn vài chỗ AI vẫn phải đoán. Sửa theo gợi ý bên dưới là lên điểm ngay.',
+  cheer: s => s+'/7, chưa sao cả! 💪 Đây chính là lý do mình luyện tập. Mỗi tiêu chí chưa đạt là một chỗ AI phải tự đoán về bạn. Sửa từng chỗ theo gợi ý rồi bấm chấm lại nha!'
+};
+const moodOf = s => s>=6?'star':(s>=4?'happy':'cheer');
+const colorOf = s => s>=6?'#34d399':(s>=4?'#22d3ee':'#fb7185');
+
 async function submitForm(){
   const d = {name:val('name'), current:val('current'), goal:val('goal'), constraint:val('constraint'), prompt:val('prompt')};
   const empty = ['current','goal','constraint','prompt'].filter(k=>!d[k]);
-  if (empty.length){ show('<div class="warn">Bạn còn để trống '+empty.length+' ô. Điền đủ 4 ô rồi chấm nhé.</div>'); return; }
-
+  if (empty.length){
+    show('<div class="card" style="display:flex;gap:12px;align-items:center">'+botSVG('cheer')+
+         '<div class="bubble">Ơ, bạn còn để trống <b>'+empty.length+' ô</b>. Chipi cần đủ 4 ô mới chấm công bằng được nè 🙏</div></div>');
+    return;
+  }
   const btn = document.getElementById('btn');
-  btn.disabled = true; btn.textContent = 'Đang chấm… (có thể mất 5–20 giây nếu cả lớp cùng bấm)';
-  show('');
+  btn.disabled = true; btn.textContent = '🤖 Chipi đang chấm…';
+  show('<div class="card" style="display:flex;gap:12px;align-items:center">'+botSVG('think','thinking')+
+       '<div class="bubble">Chipi đang đọc từng chữ trong bài của bạn<span class="dots"></span><br><small>Cả lớp cùng bấm thì có thể mất 5–20 giây nha.</small></div></div>');
   try {
     const r = await callApi({action:'grade', data:d});
-    render(r, 'AI chấm theo rubric');
+    render(r, false);
   } catch (err) {
+    console.warn('Lỗi máy chấm AI:', err);
     const c = ruleCheck(d), score = c.filter(x=>x.pass).length;
     callApi({action:'fallback', data:d, score:score}).catch(()=>{});
-    render({criteria:c, score:score, total:7, fixes:c.filter(x=>!x.pass).slice(0,3).map(x=>x.name+': '+x.reason), guesses:[]},
-           'Chấm nhanh bằng luật cứng (AI đang bận: '+esc(err.message||err)+')');
+    render({criteria:c, score:score, total:7,
+            fixes:c.filter(x=>!x.pass).slice(0,3).map(x=>x.name+': '+(x.reason.split('Gợi ý: ')[1]||x.reason)),
+            guesses:[]}, true);
   } finally {
-    btn.disabled = false; btn.textContent = 'Chấm lại';
+    btn.disabled = false; btn.textContent = '🔁 Nhờ Chipi chấm lại';
   }
 }
 
-function render(r, src){
-  let h = '<div class="card"><div class="score">ĐIỂM: '+r.score+'/'+r.total+'</div><div class="src">'+src+'</div>';
-  h += '<table><tr><th>#</th><th>Tiêu chí</th><th>KQ</th><th>Lý do</th></tr>';
-  r.criteria.forEach(c => { h += '<tr><td>'+c.id+'</td><td>'+esc(c.name)+'</td><td class="'+(c.pass?'p':'f')+'">'+(c.pass?'✅':'❌')+'</td><td>'+esc(c.reason)+'</td></tr>'; });
-  h += '</table>';
-  if (r.fixes && r.fixes.length) h += '<h3>Việc cần sửa ngay</h3><ol>'+r.fixes.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ol>';
-  if (r.guesses && r.guesses.length) h += '<h3>AI sẽ phải đoán</h3><ul>'+r.guesses.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>';
-  h += '<div class="hint">Máy chấm cũng là AI, nên cũng có thể sai. Bạn thấy chỗ nào chấm chưa đúng? Dựa vào đâu?</div></div>';
+function render(r, isRule){
+  const s = r.score, mood = moodOf(s);
+  let h = '<div class="card">';
+  h += '<div class="resHead">'+botSVG(mood)+
+       '<div class="bubble" style="flex:1">'+MSG[mood](s)+'</div>'+
+       '<div class="ring" style="--p:'+Math.round(s/r.total*100)+';--c:'+colorOf(s)+'"><div><span>'+s+'/'+r.total+'<small>điểm</small></span></div></div></div>';
+  if (isRule) {
+    h += '<div class="note">⚡ <b>Lần này Chipi chấm bằng "bộ quy tắc nhanh"</b> vì bộ não AI của Chipi đang quá tải (cả lớp cùng bấm) hoặc tạm nghỉ.<br>'+
+         'Bộ quy tắc nhanh chỉ kiểm tra <b>hình thức</b>: có con số không, có mốc thời gian không, có cụm cài sẵn đáp án như "đúng không?" không. '+
+         'Nó <b>chưa đọc hiểu nội dung</b> như AI, nên điểm có thể cao hoặc thấp hơn thực tế một chút.<br>'+
+         '👉 Bạn cứ sửa bài theo gợi ý bên dưới, rồi bấm <b>Chấm lại</b> sau khoảng 1 phút để Chipi chấm chi tiết bằng AI nhé!</div>';
+  }
+  h += '<div class="crit">';
+  r.criteria.forEach(c => {
+    h += '<div class="ci '+(c.pass?'ok':'')+'"><h4>'+(c.pass?'✅':'❌')+' '+c.id+'. '+esc(c.name)+
+         ' <span class="tag">'+(c.pass?'Đạt':'Chưa đạt')+'</span><span class="part">'+(c.id<=3?'Mô tả vấn đề':'Prompt')+'</span></h4>'+
+         '<p>'+esc(c.reason)+'</p></div>';
+  });
+  h += '</div>';
+  if (r.fixes && r.fixes.length) h += '<h3>🛠️ Sửa ngay 3 việc này</h3><ol>'+r.fixes.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ol>';
+  if (r.guesses && r.guesses.length) h += '<h3>🔮 Những điều AI sẽ phải đoán về bạn</h3><ul>'+r.guesses.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>';
+  h += '<div class="think">🧠 <b>Phản biện ngược lại Chipi:</b> Chipi cũng là AI, nên cũng có thể chấm sai. Bạn thấy tiêu chí nào chấm chưa đúng? Dựa vào đâu?</div>';
+  h += '</div>';
   show(h);
-  document.getElementById('out').scrollIntoView({behavior:'smooth'});
+  document.getElementById('out').scrollIntoView({behavior:'smooth', block:'start'});
 }
 function show(h){ document.getElementById('out').innerHTML = h; }
 </script>
