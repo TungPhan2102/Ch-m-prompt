@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<title>Máy chấm Prompt</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="utf-8">
+<style>
+  :root{--blue:#034EA2;--org:#F37021;--lb:#E8EFF8;--lo:#FEF1E8;--gr:#F2F3F5;--ok:#16A34A;--bad:#DC2626}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI",Roboto,Arial,sans-serif;background:#fafbfc;color:#111;font-size:15px}
+  header{background:linear-gradient(90deg,#16A34A,#034EA2);color:#fff;padding:14px 18px}
+  header h1{margin:0;font-size:20px} header p{margin:4px 0 0;font-size:13px;opacity:.9}
+  main{max-width:760px;margin:0 auto;padding:16px}
+  label{display:block;font-weight:700;color:var(--blue);margin:14px 0 4px}
+  label small{font-weight:400;color:#555}
+  input,textarea{width:100%;padding:10px;border:1px solid #cfd6e0;border-radius:8px;font:inherit;background:#fff}
+  textarea{min-height:64px;resize:vertical}
+  #prompt{min-height:96px}
+  button{margin-top:16px;width:100%;padding:13px;border:0;border-radius:8px;background:var(--org);color:#fff;font-size:16px;font-weight:700;cursor:pointer}
+  button:disabled{opacity:.6;cursor:wait}
+  .card{background:#fff;border-radius:10px;padding:14px;margin-top:16px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  .score{font-size:30px;font-weight:800;color:var(--blue)}
+  .src{font-size:12px;color:#666}
+  table{width:100%;border-collapse:collapse;margin-top:8px;font-size:14px}
+  th{background:var(--blue);color:#fff;text-align:left;padding:7px}
+  td{padding:7px;border-bottom:1px solid #eee;vertical-align:top}
+  .p{color:var(--ok);font-weight:700}.f{color:var(--bad);font-weight:700}
+  h3{margin:14px 0 6px;font-size:15px;color:var(--org)}
+  ol,ul{margin:4px 0;padding-left:20px}
+  .warn{background:var(--lo);border-left:4px solid var(--org);padding:10px;border-radius:6px;margin-top:12px;font-size:14px}
+  .hint{background:var(--gr);padding:10px;border-radius:6px;font-size:13px;margin-top:10px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Máy chấm Prompt</h1>
+  <p>Tư duy phản biện khi sử dụng AI · Không nhập thông tin cá nhân nhạy cảm</p>
+</header>
+<main>
+  <label>Tên / biệt danh <small>(để giảng viên gọi tên)</small></label>
+  <input id="name" maxlength="80" placeholder="VD: Minh – nhóm 3">
+
+  <label>1. HIỆN TRẠNG <small>–  Viết bối cảnh cụ thể, Viết sự thật, không viết cảm xúc</small></label>
+  <textarea id="current" placeholder="VD: Sinh viên năm 3, học Java cơ bản 1 kỳ, chưa làm project nào."></textarea>
+
+  <label>2. MONG MUỐN <small>– Mục tiêu của bạn, bạn muốn gì?</small></label>
+  <textarea id="goal" placeholder="VD: Có suất thực tập Java backend trước tháng 6."></textarea>
+
+  <label>3. RÀNG BUỘC <small>– Mốc thời gian bao lâu, nguồn lực gì, như thế nào là đạt được?</small></label>
+  <textarea id="constraint" placeholder="VD: Còn 3 tháng, mỗi tuần rảnh 10 giờ."></textarea>
+
+  <label>4. PROMPT <small>– câu bạn sẽ gửi cho AI (Mục đích + Bối cảnh + Yêu cầu đầu ra)</small></label>
+  <textarea id="prompt" placeholder="VD: Lên kế hoạch 3 tháng để mình xin thực tập Java backend. Bối cảnh: ... Trả về bảng theo tuần, có mục tiêu và sản phẩm."></textarea>
+
+  <button id="btn" onclick="submitForm()">Chấm bài</button>
+  <div id="out"></div>
+</main>
+
+<script>
+const NAMES = ['Hiện trạng là sự thật','Mong muốn cụ thể','Có ràng buộc','Có mục đích','Có bối cảnh','Có yêu cầu đầu ra','Trung lập'];
+const val = id => document.getElementById(id).value.trim();
+const esc = s => String(s||'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- LUẬT CỨNG: chạy trên trình duyệt, không cần AI ---------- */
+const NUM = /\d/;
+const TIME = /(\d+\s*(ngày|tuần|tháng|năm|giờ|tiếng|phút|kỳ|học kỳ))|(tháng\s*\d+)|(trước|trong vòng|hạn|deadline|cuối (kỳ|năm|tháng))/i;
+const EMO = /(rất lo|lo lắng|sợ|áp lực|chán|kém|tệ|stress|buồn|hoang mang)/i;
+const LEAD = /(đúng không|phải không|nhỉ\s*\??|chắc là|ai cũng|là đủ rồi|rất hay|khá dở|mình thấy .*(hay|dở|ổn))/i;
+const OUTFMT = /(bảng|danh sách|liệt kê|\d+\s*(bước|ý|gạch đầu dòng)|theo tuần|theo ngày|dạng|format|định dạng|so sánh)/i;
+
+function ruleCheck(d){
+  const c = [
+    {pass: d.current.length>15 && NUM.test(d.current), reason: NUM.test(d.current)?'Có thông tin cụ thể.':'Chưa có con số/sự thật kiểm tra được (năm học, điểm, kỹ năng...).'},
+    {pass: d.goal.length>10 && TIME.test(d.goal), reason: TIME.test(d.goal)?'Có mốc thời gian/thước đo.':'Chưa có mốc thời gian hoặc thước đo.'},
+    {pass: NUM.test(d.constraint), reason: NUM.test(d.constraint)?'Có giới hạn cụ thể.':'Ràng buộc chưa có con số (bao nhiêu giờ, bao nhiêu tiền, còn bao lâu?).'},
+    {pass: d.prompt.length>20, reason: d.prompt.length>20?'Prompt có nội dung.':'Prompt quá ngắn để thấy mục đích.'},
+    {pass: d.prompt.length>60 && NUM.test(d.prompt), reason: 'Kiểm tra thô: prompt có đưa chi tiết từ problem statement vào không.'},
+    {pass: OUTFMT.test(d.prompt), reason: OUTFMT.test(d.prompt)?'Có nói dạng đầu ra.':'Chưa nói muốn nhận về dạng gì (bảng, danh sách, theo tuần...).'},
+    {pass: !LEAD.test(d.prompt), reason: LEAD.test(d.prompt)?'Có cụm cài sẵn đáp án: "'+d.prompt.match(LEAD)[0]+'".':'Không thấy cụm cài sẵn đáp án.'}
+  ];
+  if (EMO.test(d.current)) c[0].reason += ' Lưu ý: có từ cảm xúc ("'+d.current.match(EMO)[0]+'").';
+  return c.map((x,i)=>({id:i+1,name:NAMES[i],pass:x.pass,reason:x.reason}));
+}
+
+/* ====== DÁN LINK /exec CỦA APPS SCRIPT VÀO ĐÂY ====== */
+const API_URL = 'https://script.google.com/macros/s/AKfycbyTrWfFcJCvHYm4ppMgluzLIPr_Czf01PUDraPgzXgPVcMs3OvYO9ChpqtM-PlfcyaVzQ/exec';
+
+async function callApi(payload){
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: {'Content-Type': 'text/plain;charset=utf-8'},  // tránh preflight CORS
+    body: JSON.stringify(payload),
+    credentials: 'omit',      // KHÔNG gửi tài khoản Google → hết lỗi nhiều email
+    redirect: 'follow'
+  });
+  const j = await res.json();
+  if (!j.ok) throw new Error(j.error || 'Lỗi không rõ');
+  return j.result;
+}
+
+async function submitForm(){
+  const d = {name:val('name'), current:val('current'), goal:val('goal'), constraint:val('constraint'), prompt:val('prompt')};
+  const empty = ['current','goal','constraint','prompt'].filter(k=>!d[k]);
+  if (empty.length){ show('<div class="warn">Bạn còn để trống '+empty.length+' ô. Điền đủ 4 ô rồi chấm nhé.</div>'); return; }
+
+  const btn = document.getElementById('btn');
+  btn.disabled = true; btn.textContent = 'Đang chấm… (có thể mất 5–20 giây nếu cả lớp cùng bấm)';
+  show('');
+  try {
+    const r = await callApi({action:'grade', data:d});
+    render(r, 'AI chấm theo rubric');
+  } catch (err) {
+    const c = ruleCheck(d), score = c.filter(x=>x.pass).length;
+    callApi({action:'fallback', data:d, score:score}).catch(()=>{});
+    render({criteria:c, score:score, total:7, fixes:c.filter(x=>!x.pass).slice(0,3).map(x=>x.name+': '+x.reason), guesses:[]},
+           'Chấm nhanh bằng luật cứng (AI đang bận: '+esc(err.message||err)+')');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Chấm lại';
+  }
+}
+
+function render(r, src){
+  let h = '<div class="card"><div class="score">ĐIỂM: '+r.score+'/'+r.total+'</div><div class="src">'+src+'</div>';
+  h += '<table><tr><th>#</th><th>Tiêu chí</th><th>KQ</th><th>Lý do</th></tr>';
+  r.criteria.forEach(c => { h += '<tr><td>'+c.id+'</td><td>'+esc(c.name)+'</td><td class="'+(c.pass?'p':'f')+'">'+(c.pass?'✅':'❌')+'</td><td>'+esc(c.reason)+'</td></tr>'; });
+  h += '</table>';
+  if (r.fixes && r.fixes.length) h += '<h3>Việc cần sửa ngay</h3><ol>'+r.fixes.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ol>';
+  if (r.guesses && r.guesses.length) h += '<h3>AI sẽ phải đoán</h3><ul>'+r.guesses.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>';
+  h += '<div class="hint">Máy chấm cũng là AI, nên cũng có thể sai. Bạn thấy chỗ nào chấm chưa đúng? Dựa vào đâu?</div></div>';
+  show(h);
+  document.getElementById('out').scrollIntoView({behavior:'smooth'});
+}
+function show(h){ document.getElementById('out').innerHTML = h; }
+</script>
+</body>
+</html>
